@@ -1,5 +1,5 @@
 {
-  "PREFIX": ",",
+  "PREFIX": "@",
   "dakogOten": "hard07",
   "PORT": 8080,
   "WEBVIEW": "https://octobotremakev6-z36fc1ea.b4a.run/",
@@ -7,7 +7,7 @@
   "admin": [
     "61556251846264",
     "61561956243170",
-    "100086308503542"
+    "100037673498563"
   ],
   "ADS": "🐙Go OctobotRemake Go",
   "ADS_TIMER": "60",
