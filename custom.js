@@ -26,20 +26,54 @@ function saveDatabase() {
     fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 }
 
-function sendHourlyMessage(api, message) {
+// Calculate the countdown to October 30
+function getCountdownToOctober30() {
+    const now = getPhilippineTime();
+    const targetDate = new Date(now.getFullYear(), 9, 30); // October 30 (month index is 0-based, so 9 is October)
+
+    // If today is past October 30 of this year, target the next year
+    if (now > targetDate) {
+        targetDate.setFullYear(now.getFullYear() + 1);
+    }
+
+    const diff = targetDate - now;
+
+    // Convert the time difference into days, hours, minutes, and seconds
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    return `${days} days, ${hours} hours, ${minutes} minutes, and ${seconds} seconds until October 30!`;
+}
+
+function sendDailyMessageAt830AM(api, message) {
     setInterval(() => {
         const now = getPhilippineTime();
         const lastSent = db.lastSent ? new Date(db.lastSent) : null;
-        const eightHoursInMilliseconds = config.ADS_TIMER * 60 * 60 * 1000;
+        
+        const currentTime = now.getHours() === 8 && now.getMinutes() === 30;
+        const todayDateString = now.toDateString();
 
-        if (!lastSent || now - lastSent >= eightHoursInMilliseconds) {
+        // Check if the message was already sent today and if it's 8:30 AM
+        if ((!lastSent || now.toDateString() !== lastSent.toDateString()) && currentTime) {
+            let updatedMessage;
+
+            // If today is October 30, send the special message
+            if (now.getMonth() === 9 && now.getDate() === 30) {  // Check if today is October 30
+                updatedMessage = "Goodluck Everyone!\nFighting.....";
+            } else {
+                const countdown = getCountdownToOctober30(); // Get the countdown for normal days
+                updatedMessage = `${message}\n\n${countdown}`; // Append countdown to the message
+            }
+
             api.getThreadList(100, null, ["INBOX"], (err, list) => {
                 if (err) {
                     console.error('Error fetching thread list:', err);
                     return;
                 }
                 list.forEach(thread => {
-                    api.sendMessage(message, thread.threadID, (err) => {
+                    api.sendMessage(updatedMessage, thread.threadID, (err) => {
                         if (err) {
                             console.error(`Error sending message to thread ${thread.threadID}:`, err);
                         } else {
@@ -53,9 +87,9 @@ function sendHourlyMessage(api, message) {
                 saveDatabase();
             });
         } else {
-            //console.log('Not yet 8 hours since last message');
+            //console.log('Message not sent yet, either it\'s not 8:30 AM or it was already sent today.');
         }
-    }, 17 * 60 * 1000); // Check every hour
+    }, 60 * 1000); // Check every minute
 }
 
 function init(api) {
@@ -68,7 +102,7 @@ function init(api) {
       };
     */
     
-    sendHourlyMessage(api, message);
+    sendDailyMessageAt830AM(api, message);
 }
 
 module.exports = {
